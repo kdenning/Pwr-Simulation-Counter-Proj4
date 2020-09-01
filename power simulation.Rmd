@@ -27,35 +27,37 @@ Based on tutorial I found: https://benwhalley.github.io/just-enough-r/power-anal
 ```{r simulation data}
 set.seed(1234)
 simulated.df <- data_frame(
-  inout_sim = rep(0:1, each = 5700),
-  issue_sim = rep(0:2, each = 3800),
-  proj_item = rep(1:19, 600),
-  stereo_item = rep(1:19, 600),
-  mod = rep(1:5, length.out = 11400),
-  targ_item = runif(n = 11400, min = 1, max = 6),
-  subject = rep(1:600, each = 19)
+  inout_sim = rep(0:1, each = 19,  times = 375),
+  issue_sim = rep(0:2, each = 19, times = 250),
+  item_num = rep(1:19, 750),
+  proj_score = runif(n = 14250, min = 1, max = 6),
+  stereo_score = runif(n = 14250, min = 1, max = 6),
+  mod = rep(1:5, length.out = 14250),
+  targ_item = runif(n = 14250, min = 1, max = 6),
+  subject = rep(1:750, each = 19)
 )#had to simulate the data off of 19 for the number of items in the BFI, which is why its an odd number and wanted each cell to have at least 50, so this is what we ended up with
 head(simulated.df)
 
 simulated.df %<>% 
   mutate(inout_sim = as.factor(inout_sim),
          issue_sim = as.factor(issue_sim))
-
-
 ```
+
+
 
 ```{r model with no set effect size}
-total_model <- lmer(targ_item ~ proj_item*stereo_item*issue_sim*inout_sim*mod + (proj_item|subject), data = simulated.df)
+total_model <- lmer(targ_item ~ proj_score*stereo_score*issue_sim*inout_sim*mod + (stereo_score + proj_score|subject), data = simulated.df)
 anova(total_model)
 
-proj_only <- lmer(targ_item ~ proj_item + (proj_item|subject), data = simulated.df)
-anova(proj_only)
 ```
+#model failed to converge at 750, at 600 it had a singularity issue
 
 ```{r running simulation with the projection*group effect}
-fixef(total_model)['proj_item:inout_sim'] <- 0.36
+fixef(total_model)['proj_score:inout_sim'] <- 0.36
 
-powerSim(proj_only, test = "proj_item", nsim = 100)
+fixef(total_model)['proj_score'] <- 0.15
+
+powerSim(total_model, test = "proj_score", nsim = 100)
 ```
 
 
